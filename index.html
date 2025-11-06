@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Money Manager</title>
+    <title>Money Manager (Local Storage)</title>
     <!-- Load Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
@@ -71,11 +71,11 @@
             box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
         }
         /* Custom colors for navigation cards */
-        .finance-bg { background-color: #d1fae5; color: #059669; } /* Green */
-        .events-bg { background-color: #dbeafe; color: #2563eb; } /* Blue */
-        .vacations-bg { background-color: #fae8ff; color: #a855f7; } /* Purple */
-        .holiday-bg { background-color: #fffbeb; color: #f59e0b; } /* Amber/Yellow */
-        .diet-bg { background-color: #e0e7ff; color: #4f46e5; } /* Indigo */
+        .finance-bg { background-color: #efdfca; color: #212121; } /* Green */
+        .events-bg { background-color: #efdfca; color: #212121; } /* Blue */
+        .vacations-bg { background-color: #efdfca; color: #212121; } /* Purple */
+        .holiday-bg { background-color: #efdfca; color: #212121; } /* Amber/Yellow */
+        .diet-bg { background-color: #efdfca; color: #212121; } /* Indigo */
     </style>
 </head>
 <body class="min-h-screen">
@@ -168,8 +168,8 @@
                     
                     <div class="mb-6 pb-4 border-b border-gray-100 dark:border-gray-700">
                         <p class="text-sm text-gray-500 mb-2 dark:text-gray-400">Authenticated User Identifier (Local Session ID):</p>
-                        <p class="font-mono text-sm bg-gray-100 dark:bg-gray-700 px-3 py-2 rounded-lg break-all">ID: <span id="user-id" class="font-semibold text-gray-800 dark:text-gray-200">LOCAL-USER</span></p>
-                        <p class="text-xs text-red-500 mt-2">Note: This ID is local to your browser and does not sync data.</p>
+                        <p class="font-mono text-sm bg-gray-100 dark:bg-gray-700 px-3 py-2 rounded-lg break-all">ID: <span id="user-id" class="font-semibold text-gray-800 dark:text-gray-200">USER</span></p>
+                        <p class="text-xs text-red-500 mt-2"></p>
                     </div>
 
                     <div class="mb-6">
@@ -211,17 +211,17 @@
                     <!-- Total Balance -->
                     <div class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg border-l-4 border-green-500">
                         <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Total Balance (Current View)</p>
-                        <p id="total-balance" class="text-3xl font-bold text-green-700 mt-1">$0.00</p>
+                        <p id="total-balance" class="text-3xl font-bold text-green-700 mt-1">₹0.00</p>
                     </div>
                     <!-- Total Income -->
                     <div class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg border-l-4 border-blue-500">
                         <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Total Income</p>
-                        <p id="total-income" class="text-3xl font-bold text-blue-700 mt-1">$0.00</p>
+                        <p id="total-income" class="text-3xl font-bold text-blue-700 mt-1">₹0.00</p>
                     </div>
                     <!-- Total Expenses -->
                     <div class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg border-l-4 border-red-500">
                         <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Total Expenses</p>
-                        <p id="total-expenses" class="text-3xl font-bold text-red-700 mt-1">$0.00</p>
+                        <p id="total-expenses" class="text-3xl font-bold text-red-700 mt-1">₹0.00</p>
                     </div>
                 </div>
 
@@ -272,7 +272,7 @@
                         </div>
                         <!-- Amount -->
                         <div class="md:col-span-1">
-                            <label for="amount" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Amount ($)</label>
+                            <label for="amount" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Amount (₹)</label>
                             <input type="number" step="0.01" id="amount" required placeholder="10.00" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 border focus:border-green-500 focus:ring-green-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
                         </div>
                         <!-- Type (Income/Expense) -->
@@ -535,8 +535,8 @@
         
         let currentView = 'home';
 
-        // Helper function for currency formatting
-        const formatter = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' });
+        // Helper function for currency formatting (Indian Rupee)
+        const formatter = new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR' });
         
         // --- LOCAL STORAGE FUNCTIONS (REPLACING FIREBASE) ---
 
@@ -891,7 +891,6 @@
 
             transactionsToRender.forEach(transaction => {
                 const isExpense = transaction.type === 'expense';
-                const sign = isExpense ? '-' : '+';
                 const textColor = isExpense ? 'text-red-500 dark:text-red-400' : 'text-green-500 dark:text-green-400';
                 const indicatorBg = isExpense ? 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300' : 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300';
                 
@@ -900,6 +899,11 @@
 
                 // Using the locally saved timestamp (ISO string)
                 const datetime = new Date(transaction.timestamp).toLocaleString('en-US', { dateStyle: 'short', timeStyle: 'short' }); 
+                
+                // Use the formatter for signed amount
+                const signedAmount = isExpense ? -transaction.amount : transaction.amount;
+                const formattedAmount = formatter.format(signedAmount);
+
 
                 const listItem = document.createElement('li');
                 listItem.className = `flex justify-between items-center p-4 hover:bg-gray-50 dark:hover:bg-gray-700 transition duration-100 rounded-lg group`;
@@ -913,7 +917,7 @@
                     </div>
                     <div class="flex items-center space-x-4">
                         <p class="font-bold ${textColor} text-right text-lg">
-                            ${sign}${formatter.format(transaction.amount).replace('$', '')}
+                            ${formattedAmount}
                         </p>
                         <button data-id="${transaction.id}" data-type="transactions" class="delete-btn text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition duration-150 p-1 rounded">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3m-3 0h14"></path></svg>
@@ -980,6 +984,7 @@
                     },
                     tooltip: { 
                         callbacks: { 
+                            // Use formatter for tooltips
                             label: (context) => `${context.label}: ${formatter.format(context.parsed)}` 
                         } 
                     }
@@ -1011,8 +1016,12 @@
                     scales: {
                         x: { 
                             beginAtZero: true, 
-                            title: { display: true, text: 'Amount ($)', color: fontColor }, 
-                            ticks: { callback: (value) => `$${value.toFixed(0)}`, color: fontColor },
+                            title: { display: true, text: 'Amount (₹)', color: fontColor }, // Updated symbol
+                            ticks: { 
+                                // Updated symbol in callback
+                                callback: (value) => `₹${value.toFixed(0)}`, 
+                                color: fontColor 
+                            },
                             grid: { color: gridColor }
                         },
                         y: { 
@@ -1344,5 +1353,4 @@
         setupApp();
     </script>
 </body>
-
 </html>
