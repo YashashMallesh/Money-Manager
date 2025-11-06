@@ -1,0 +1,1347 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Money Manager (Local Storage)</title>
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        // Configure Tailwind to use class-based dark mode
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    // Custom colors are handled via CSS classes
+                }
+            }
+        }
+    </script>
+    <!-- Load Inter font -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <!-- Load Chart.js for visualizations -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f7f9fb; /* Light background default */
+        }
+        /* Override body background for dark mode */
+        .dark body {
+            background-color: #111827; /* Dark background */
+        }
+        .scrollable-list {
+            max-height: 50vh; /* Limit height for scroll */
+            overflow-y: auto;
+        }
+        /* Custom scrollbar for aesthetics */
+        .scrollable-list::-webkit-scrollbar {
+            width: 6px;
+        }
+        .scrollable-list::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 3px;
+        }
+        /* Style for active tab */
+        .tab-active {
+            border-color: #22c55e; /* green-500 */
+            color: #10b981; /* emerald-500 */
+            background-color: #ecfdf5; /* green-50 */
+        }
+        /* Dark mode for active tab */
+        .dark .tab-active {
+            background-color: #1f2937; /* gray-800 */
+            border-color: #10b981; /* emerald-500 */
+            color: #d1fae5; /* green-100 */
+        }
+
+        .nav-card {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 2rem;
+            border-radius: 1rem;
+            transition: all 0.2s;
+            cursor: pointer;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
+        }
+        .nav-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
+        }
+        /* Custom colors for navigation cards */
+        .finance-bg { background-color: #d1fae5; color: #059669; } /* Green */
+        .events-bg { background-color: #dbeafe; color: #2563eb; } /* Blue */
+        .vacations-bg { background-color: #fae8ff; color: #a855f7; } /* Purple */
+        .holiday-bg { background-color: #fffbeb; color: #f59e0b; } /* Amber/Yellow */
+        .diet-bg { background-color: #e0e7ff; color: #4f46e5; } /* Indigo */
+    </style>
+</head>
+<body class="min-h-screen">
+
+    <div id="app" class="container mx-auto p-4 md:p-8 max-w-4xl">
+        <header class="text-center mb-6">
+            <h1 class="text-4xl font-extrabold text-gray-800 dark:text-gray-100">Money Manager</h1>
+            <p class="text-gray-500 mt-1">Personel space for your expenses tracking and events management</p>
+        </header>
+
+        <!-- Loading & Status (Kept simple UI elements, removed logic) -->
+        <div id="status-message" class="text-center text-sm mb-4 text-red-500 hidden"></div>
+        <div id="loading-spinner" class="flex justify-center py-10 hidden">
+            <svg class="animate-spin -ml-1 mr-3 h-8 w-8 text-green-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+        </div>
+
+        <!-- Main Content Area -->
+        <div id="main-content" class="space-y-8">
+            
+            <!-- Tab Navigation (Tabs for quick access to main planners) -->
+            <div class="flex border-b border-gray-200 dark:border-gray-700 mb-6 overflow-x-auto">
+                <button id="tab-home" class="tab-button tab-active py-2 px-4 text-sm font-medium border-b-2 transition duration-150 border-green-500 text-emerald-600 flex-shrink-0" data-view="home">
+                    Home
+                </button>
+                <button id="tab-finance" class="tab-button py-2 px-4 text-sm font-medium border-b-2 border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 dark:text-gray-400 dark:hover:border-gray-600 dark:hover:text-gray-200 transition duration-150 flex-shrink-0" data-view="finance">
+                    Finance Tracker
+                </button>
+                <button id="tab-events" class="tab-button py-2 px-4 text-sm font-medium border-b-2 border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 dark:text-gray-400 dark:hover:border-gray-600 dark:hover:text-gray-200 transition duration-150 flex-shrink-0" data-view="events">
+                    Event Planner
+                </button>
+                <button id="tab-vacation" class="tab-button py-2 px-4 text-sm font-medium border-b-2 border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 dark:text-gray-400 dark:hover:border-gray-600 dark:hover:text-gray-200 transition duration-150 flex-shrink-0" data-view="vacation">
+                    Vacation Planner
+                </button>
+                <button id="tab-holiday" class="tab-button py-2 px-4 text-sm font-medium border-b-2 border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 dark:text-gray-400 dark:hover:border-gray-600 dark:hover:text-gray-200 transition duration-150 flex-shrink-0" data-view="holiday">
+                    Holiday Calendar
+                </button>
+                <button id="tab-diet" class="tab-button py-2 px-4 text-sm font-medium border-b-2 border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 dark:text-gray-400 dark:hover:border-gray-600 dark:hover:text-gray-200 transition duration-150 flex-shrink-0" data-view="diet">
+                    Diet Planner
+                </button>
+            </div>
+            
+            <!-- --- HOME VIEW (NAVIGATION CENTER) --- -->
+            <div id="home-view" class="space-y-8">
+                <!-- 1. Greeting Card -->
+                <div class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg border-l-4 border-green-500">
+                    <h2 id="home-greeting" class="text-3xl font-bold text-gray-800 dark:text-gray-100">Hello!</h2>
+                    <p class="text-gray-500 mt-1">Select an area to manage your life.</p>
+                </div>
+
+                <!-- 2. Five Navigation Buttons (2x2 Grid modified to responsive 3-column layout) -->
+                <div class="grid grid-cols-2 md:grid-cols-3 gap-6">
+                    <button class="nav-card finance-bg hover:bg-green-100" data-view="finance">
+                        <svg class="w-8 h-8 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8V9a1 1 0 00-1-1h-2a1 1 0 00-1 1v1m4 0v1a1 1 0 001 1h2a1 1 0 001-1v-1m-4 0h-4m12 0a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                        <span class="font-bold text-lg">Finance Tracker</span>
+                    </button>
+                    <button class="nav-card events-bg hover:bg-blue-100" data-view="events">
+                        <svg class="w-8 h-8 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                        <span class="font-bold text-lg">Event Planner</span>
+                    </button>
+                    <button class="nav-card vacations-bg hover:bg-purple-100" data-view="vacation">
+                        <svg class="w-8 h-8 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 8v.01M6 16v.01M12 10.5V17M12 17a4 4 0 004-4v-2a4 4 0 00-4-4V7a4 4 0 00-4 4v2a4 4 0 004 4z"></path></svg>
+                        <span class="font-bold text-lg">Vacation Planner</span>
+                    </button>
+                    <button class="nav-card holiday-bg hover:bg-amber-100" data-view="holiday">
+                        <svg class="w-8 h-8 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                        <span class="font-bold text-lg">Holiday Calendar</span>
+                    </button>
+                    <!-- NEW DIET BUTTON -->
+                    <button class="nav-card diet-bg hover:bg-indigo-100" data-view="diet">
+                        <svg class="w-8 h-8 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 13h6m-3-3v6m-9 1V7a2 2 0 012-2h10a2 2 0 012 2v10a2 2 0 01-2 2H5a2 2 0 01-2-2z"></path></svg>
+                        <span class="font-bold text-lg">Diet Planner</span>
+                    </button>
+                </div>
+                
+                <!-- 4. Account Button -->
+                <div class="pt-6 border-t border-gray-200 dark:border-gray-700">
+                    <button id="account-nav-button" class="w-full py-3 bg-gray-700 text-white rounded-xl font-semibold hover:bg-gray-800 transition duration-150 shadow-lg">
+                        Account & Settings
+                    </button>
+                </div>
+            </div>
+
+            <!-- --- ACCOUNT VIEW --- -->
+            <div id="account-view" class="space-y-8 hidden">
+                <div class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg">
+                    <h2 class="text-3xl font-bold text-gray-800 dark:text-gray-100 mb-4">Account Settings</h2>
+                    
+                    <div class="mb-6 pb-4 border-b border-gray-100 dark:border-gray-700">
+                        <p class="text-sm text-gray-500 mb-2 dark:text-gray-400">Authenticated User Identifier (Local Session ID):</p>
+                        <p class="font-mono text-sm bg-gray-100 dark:bg-gray-700 px-3 py-2 rounded-lg break-all">ID: <span id="user-id" class="font-semibold text-gray-800 dark:text-gray-200">LOCAL-USER</span></p>
+                        <p class="text-xs text-red-500 mt-2">Note: This ID is local to your browser and does not sync data.</p>
+                    </div>
+
+                    <div class="mb-6">
+                        <h3 class="text-xl font-semibold text-gray-800 dark:text-gray-100 mb-2">Change Display Name</h3>
+                        <form id="username-form" class="flex flex-col sm:flex-row gap-2">
+                            <input type="text" id="username-input" placeholder="Enter your preferred name" required class="flex-grow rounded-md border-gray-300 shadow-sm p-2 border text-sm focus:border-green-500 focus:ring-green-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                            <button type="submit" class="bg-green-600 text-white p-2 rounded-md font-semibold hover:bg-green-700 transition duration-150 shadow-md sm:w-1/4">Save Name</button>
+                        </form>
+                    </div>
+
+                    <!-- THEME SELECTOR -->
+                    <div class="pt-6 border-t border-gray-100 dark:border-gray-700">
+                        <h3 class="text-xl font-semibold text-gray-800 dark:text-gray-100 mb-2">Theme Selector</h3>
+                        <div class="flex items-center space-x-4">
+                            <label for="theme-selector" class="text-sm font-medium text-gray-700 dark:text-gray-400">Choose Theme:</label>
+                            <select id="theme-selector" class="rounded-md border-gray-300 shadow-sm p-2 border text-sm focus:border-green-500 focus:ring-green-500 dark:bg-gray-700 dark:text-white dark:border-gray-600">
+                                <option value="light">Light</option>
+                                <option value="dark">Dark</option>
+                            </select>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- --- FINANCE VIEW --- -->
+            <div id="finance-view" class="space-y-8 hidden">
+                <!-- Account Selector -->
+                <div class="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-lg flex items-center justify-between">
+                    <label for="account-selector" class="text-lg font-medium text-gray-800 dark:text-gray-100">Account View:</label>
+                    <select id="account-selector" class="flex-grow max-w-xs ml-4 rounded-md border-gray-300 shadow-sm p-2 border focus:border-green-500 focus:ring-green-500 dark:bg-gray-700 dark:text-white dark:border-gray-600">
+                        <option value="all">All Accounts</option>
+                        <!-- Account options inserted here by JS -->
+                    </select>
+                </div>
+                
+                <!-- Summary Card -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <!-- Total Balance -->
+                    <div class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg border-l-4 border-green-500">
+                        <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Total Balance (Current View)</p>
+                        <p id="total-balance" class="text-3xl font-bold text-green-700 mt-1">$0.00</p>
+                    </div>
+                    <!-- Total Income -->
+                    <div class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg border-l-4 border-blue-500">
+                        <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Total Income</p>
+                        <p id="total-income" class="text-3xl font-bold text-blue-700 mt-1">$0.00</p>
+                    </div>
+                    <!-- Total Expenses -->
+                    <div class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg border-l-4 border-red-500">
+                        <p class="text-sm font-medium text-gray-500 dark:text-gray-400">Total Expenses</p>
+                        <p id="total-expenses" class="text-3xl font-bold text-red-700 mt-1">$0.00</p>
+                    </div>
+                </div>
+
+                <!-- Account Management Panel -->
+                <div class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg">
+                    <h2 class="text-2xl font-semibold mb-4 text-gray-800 dark:text-gray-100">Manage Accounts</h2>
+                    
+                    <!-- Add Account Form -->
+                    <form id="add-account-form" class="flex flex-col sm:flex-row gap-2 mb-6">
+                        <input type="text" id="new-account-name" required placeholder="New Account Name (e.g., Savings, Visa)" class="flex-grow rounded-md border-gray-300 shadow-sm p-2 border focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                        <button type="submit" class="bg-blue-600 text-white p-2 rounded-md font-semibold hover:bg-blue-700 transition duration-150 shadow-md sm:w-1/4">Add Account</button>
+                    </form>
+
+                    <!-- Account List -->
+                    <div id="account-list" class="space-y-2">
+                        <p id="empty-account-state" class="text-gray-500 dark:text-gray-400 text-sm hidden">No custom accounts created yet. Add your first one above!</p>
+                        <!-- Account items inserted here -->
+                    </div>
+                </div>
+
+
+                <!-- Expense Visualizations -->
+                <div class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg">
+                    <h2 class="text-2xl font-semibold mb-4 text-gray-800 dark:text-gray-100">Expense Visualizations (Current View)</h2>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <h3 class="text-lg font-medium text-gray-700 dark:text-gray-300 mb-2">Spending by Category (Pie Chart)</h3>
+                            <canvas id="expensePieChart"></canvas>
+                        </div>
+                        <div>
+                            <h3 class="text-lg font-medium text-gray-700 dark:text-gray-300 mb-2">Top Spending Categories (Bar Chart)</h3>
+                            <canvas id="expenseBarChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- New Transaction Form -->
+                <div class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg">
+                    <h2 class="text-2xl font-semibold mb-4 text-gray-800 dark:text-gray-100">Add New Transaction</h2>
+                    <form id="transaction-form" class="grid grid-cols-1 md:grid-cols-6 gap-4">
+                        <!-- Account Selector -->
+                        <div class="md:col-span-1">
+                            <label for="transaction-account-id" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Account</label>
+                            <select id="transaction-account-id" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 border focus:border-green-500 focus:ring-green-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                                <option value="" disabled selected>Select Account</option>
+                                <!-- Account options injected by JS -->
+                            </select>
+                        </div>
+                        <!-- Amount -->
+                        <div class="md:col-span-1">
+                            <label for="amount" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Amount ($)</label>
+                            <input type="number" step="0.01" id="amount" required placeholder="10.00" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 border focus:border-green-500 focus:ring-green-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                        </div>
+                        <!-- Type (Income/Expense) -->
+                        <div class="md:col-span-1">
+                            <label for="type" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Type</label>
+                            <select id="type" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 border focus:border-green-500 focus:ring-green-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                                <option value="expense">Expense (-)</option>
+                                <option value="income">Income (+)</option>
+                            </select>
+                        </div>
+                        <!-- Category -->
+                        <div class="md:col-span-1">
+                            <label for="category" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Category</label>
+                            <input type="text" id="category" required placeholder="Groceries, Salary, etc." class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 border focus:border-green-500 focus:ring-green-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                        </div>
+                        <!-- Description -->
+                        <div class="md:col-span-1">
+                            <label for="description" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Description</label>
+                            <input type="text" id="description" required placeholder="Starbucks Coffee" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 border focus:border-green-500 focus:ring-green-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                        </div>
+                        <!-- Submit Button -->
+                        <div class="md:col-span-1 flex items-end">
+                            <button type="submit" class="w-full bg-green-600 text-white p-2 rounded-md font-semibold hover:bg-green-700 transition duration-150 shadow-md">Add</button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Transaction List -->
+                <div class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg">
+                    <h2 class="text-2xl font-semibold mb-4 text-gray-800 dark:text-gray-100">Recent Transactions (Current View)</h2>
+                    <div id="transaction-list-container" class="scrollable-list">
+                        <ul id="transaction-list" class="divide-y divide-gray-100 dark:divide-gray-700">
+                            <li id="empty-finance-state" class="p-4 text-center text-gray-500 dark:text-gray-400">No transactions recorded yet. Add one above!</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- --- EVENTS VIEW --- -->
+            <div id="events-view" class="space-y-8 hidden">
+                <!-- New Event Form -->
+                <div class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg">
+                    <h2 class="text-2xl font-semibold mb-4 text-gray-800 dark:text-gray-100">Add New Event/Date</h2>
+                    <form id="event-form" class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                        <!-- Event Title -->
+                        <div>
+                            <label for="event-title" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Title</label>
+                            <input type="text" id="event-title" required placeholder="John's Birthday" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 border focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                        </div>
+                        <!-- Event Date -->
+                        <div>
+                            <label for="event-date" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Date</label>
+                            <input type="date" id="event-date" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 border focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                        </div>
+                        <!-- Event Type -->
+                        <div>
+                            <label for="event-type" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Type</label>
+                            <select id="event-type" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 border focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                                <option value="Birthday">Birthday</option>
+                                <option value="Appointment">Appointment</option>
+                                <option value="Holiday">Holiday</option>
+                                <option value="Reminder">Reminder</option>
+                            </select>
+                        </div>
+                        <!-- Submit Button -->
+                        <div class="flex items-end">
+                            <button type="submit" class="w-full bg-blue-600 text-white p-2 rounded-md font-semibold hover:bg-blue-700 transition duration-150 shadow-md">Save Event</button>
+                        </div>
+                        <!-- Event Description -->
+                        <div class="md:col-span-4">
+                            <label for="event-description" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Description (Optional)</label>
+                            <input type="text" id="event-description" placeholder="Don't forget the gift!" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 border focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Event List -->
+                <div class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg">
+                    <h2 class="text-2xl font-semibold mb-4 text-gray-800 dark:text-gray-100">Upcoming Events</h2>
+                    <div id="event-list-container" class="scrollable-list">
+                        <ul id="event-list" class="divide-y divide-gray-100 dark:divide-gray-700">
+                            <li id="empty-events-state" class="p-4 text-center text-gray-500 dark:text-gray-400">No events saved yet.</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- --- VACATION VIEW --- -->
+            <div id="vacation-view" class="space-y-8 hidden">
+                <!-- New Vacation Form -->
+                <div class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg">
+                    <h2 class="text-2xl font-semibold mb-4 text-gray-800 dark:text-gray-100">Plan a New Trip</h2>
+                    <form id="vacation-form" class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                        <!-- Trip Name -->
+                        <div class="md:col-span-2">
+                            <label for="trip-name" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Trip Name/Destination</label>
+                            <input type="text" id="trip-name" required placeholder="Maui Adventure" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 border focus:border-purple-500 focus:ring-purple-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                        </div>
+                        <!-- Start Date -->
+                        <div>
+                            <label for="start-date" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Start Date</label>
+                            <input type="date" id="start-date" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 border focus:border-purple-500 focus:ring-purple-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                        </div>
+                        <!-- End Date -->
+                        <div>
+                            <label for="end-date" class="block text-sm font-medium text-gray-700 dark:text-gray-300">End Date</label>
+                            <input type="date" id="end-date" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 border focus:border-purple-500 focus:ring-purple-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                        </div>
+                        <!-- Friends/Participants -->
+                        <div class="md:col-span-3">
+                            <label for="participants" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Friends/Participants (Comma separated)</label>
+                            <input type="text" id="participants" placeholder="Alice, Bob, Chris" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 border focus:border-purple-500 focus:ring-purple-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                        </div>
+                        <!-- Submit Button -->
+                        <div class="flex items-end">
+                            <button type="submit" class="w-full bg-purple-600 text-white p-2 rounded-md font-semibold hover:bg-purple-700 transition duration-150 shadow-md">Plan Trip</button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Vacation List -->
+                <div class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg">
+                    <h2 class="text-2xl font-semibold mb-4 text-gray-800 dark:text-gray-100">Upcoming Trips</h2>
+                    <div id="vacation-list-container" class="scrollable-list">
+                        <ul id="vacation-list" class="divide-y divide-gray-100 dark:divide-gray-700">
+                            <li id="empty-vacation-state" class="p-4 text-center text-gray-500 dark:text-gray-400">No trips planned yet.</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <!-- --- HOLIDAY CALENDAR VIEW --- -->
+            <div id="holiday-view" class="space-y-8 hidden">
+                <!-- New Holiday Form -->
+                <div class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg">
+                    <h2 class="text-2xl font-semibold mb-4 text-gray-800 dark:text-gray-100">Add Personal Holiday/Day Off</h2>
+                    <form id="holiday-form" class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <!-- Holiday Name -->
+                        <div>
+                            <label for="holiday-name" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Holiday Name</label>
+                            <input type="text" id="holiday-name" required placeholder="Christmas Day, Day Off, etc." class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 border focus:border-amber-500 focus:ring-amber-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                        </div>
+                        <!-- Holiday Date -->
+                        <div>
+                            <label for="holiday-date" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Date</label>
+                            <input type="date" id="holiday-date" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 border focus:border-amber-500 focus:ring-amber-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                        </div>
+                        <!-- Submit Button -->
+                        <div class="flex items-end">
+                            <button type="submit" class="w-full bg-amber-600 text-white p-2 rounded-md font-semibold hover:bg-amber-700 transition duration-150 shadow-md">Save Holiday</button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Holiday List -->
+                <div class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg">
+                    <h2 class="text-2xl font-semibold mb-4 text-gray-800 dark:text-gray-100">Upcoming Holidays</h2>
+                    <div id="holiday-list-container" class="scrollable-list">
+                        <ul id="holiday-list" class="divide-y divide-gray-100 dark:divide-gray-700">
+                            <li id="empty-holiday-state" class="p-4 text-center text-gray-500 dark:text-gray-400">No holidays saved yet.</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <!-- --- DIET PLANNER VIEW (NEW) --- -->
+            <div id="diet-view" class="space-y-8 hidden">
+                <!-- New Meal Form -->
+                <div class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg">
+                    <h2 class="text-2xl font-semibold mb-4 text-gray-800 dark:text-gray-100">Log New Meal / Recipe</h2>
+                    <form id="diet-form" class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                        <!-- Meal Name -->
+                        <div>
+                            <label for="meal-name" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Meal Name</label>
+                            <input type="text" id="meal-name" required placeholder="Chicken Salad" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 border focus:border-indigo-500 focus:ring-indigo-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                        </div>
+                        <!-- Meal Date -->
+                        <div>
+                            <label for="meal-date" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Date Consumed</label>
+                            <input type="date" id="meal-date" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 border focus:border-indigo-500 focus:ring-indigo-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                        </div>
+                        <!-- Calories -->
+                        <div>
+                            <label for="meal-calories" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Calories (kcal)</label>
+                            <input type="number" step="1" id="meal-calories" required placeholder="450" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 border focus:border-indigo-500 focus:ring-indigo-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                        </div>
+                        <!-- Submit Button -->
+                        <div class="flex items-end">
+                            <button type="submit" class="w-full bg-indigo-600 text-white p-2 rounded-md font-semibold hover:bg-indigo-700 transition duration-150 shadow-md">Log Meal</button>
+                        </div>
+                        <!-- Description/Ingredients -->
+                        <div class="md:col-span-4">
+                            <label for="meal-ingredients" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Ingredients/Notes (Optional)</label>
+                            <input type="text" id="meal-ingredients" placeholder="Chicken breast, lettuce, cucumber, low-fat dressing" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 border focus:border-indigo-500 focus:ring-indigo-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Meal List -->
+                <div class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg">
+                    <h2 class="text-2xl font-semibold mb-4 text-gray-800 dark:text-gray-100">Logged Meals</h2>
+                    <div id="diet-list-container" class="scrollable-list">
+                        <ul id="diet-list" class="divide-y divide-gray-100 dark:divide-gray-700">
+                            <li id="empty-diet-state" class="p-4 text-center text-gray-500 dark:text-gray-400">No meals logged yet.</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            
+        </div>
+    </div>
+
+    <!-- LOCAL STORAGE JAVASCRIPT LOGIC -->
+    <script type="module">
+        // --- GLOBAL DATA & STATE ---
+        let sessionId = 'local_user'; // Static ID since no authentication is involved
+        let accounts = [];
+        let transactions = [];
+        let events = [];
+        let vacations = [];
+        let holidays = [];
+        let meals = [];
+        let currentUserName = null; 
+        let selectedAccountId = 'all'; 
+
+        // Chart Instances
+        let pieChartInstance = null;
+        let barChartInstance = null;
+        
+        // --- UI Element References (unchanged) ---
+        const mainContentEl = document.getElementById('main-content');
+        const statusMessageEl = document.getElementById('status-message');
+        const homeGreetingEl = document.getElementById('home-greeting');
+        const homeNavButtons = document.querySelectorAll('#home-view button[data-view]');
+        const userIdEl = document.getElementById('user-id');
+        const usernameFormEl = document.getElementById('username-form');
+        const usernameInputEl = document.getElementById('username-input');
+        const accountNavButtonEl = document.getElementById('account-nav-button');
+        const themeSelectorEl = document.getElementById('theme-selector'); 
+        const accountSelectorEl = document.getElementById('account-selector');
+        const transactionAccountSelectorEl = document.getElementById('transaction-account-id');
+        const transactionListEl = document.getElementById('transaction-list');
+        const emptyFinanceStateEl = document.getElementById('empty-finance-state');
+        const totalBalanceEl = document.getElementById('total-balance');
+        const totalIncomeEl = document.getElementById('total-income');
+        const totalExpensesEl = document.getElementById('total-expenses');
+        const accountListEl = document.getElementById('account-list');
+        const emptyAccountStateEl = document.getElementById('empty-account-state');
+        const eventListEl = document.getElementById('event-list');
+        const emptyEventsStateEl = document.getElementById('empty-events-state');
+        const vacationListEl = document.getElementById('vacation-list');
+        const emptyVacationStateEl = document.getElementById('empty-vacation-state');
+        const holidayFormEl = document.getElementById('holiday-form');
+        const holidayListEl = document.getElementById('holiday-list');
+        const emptyHolidayStateEl = document.getElementById('empty-holiday-state');
+        const dietFormEl = document.getElementById('diet-form');
+        const dietListEl = document.getElementById('diet-list');
+        const emptyDietStateEl = document.getElementById('empty-diet-state');
+        const tabButtons = document.querySelectorAll('.tab-button');
+        
+        let currentView = 'home';
+
+        // Helper function for currency formatting
+        const formatter = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' });
+        
+        // --- LOCAL STORAGE FUNCTIONS (REPLACING FIREBASE) ---
+
+        function generateUniqueId() {
+            return 'id-' + Math.random().toString(36).substring(2, 9) + Date.now().toString(36);
+        }
+
+        function loadFromLocalStorage(key, defaultValue) {
+            try {
+                const stored = localStorage.getItem(key);
+                return stored ? JSON.parse(stored) : defaultValue;
+            } catch (e) {
+                console.error(`Error loading key ${key} from localStorage:`, e);
+                return defaultValue;
+            }
+        }
+
+        function saveToLocalStorage(key, data) {
+            try {
+                localStorage.setItem(key, JSON.stringify(data));
+            } catch (e) {
+                console.error(`Error saving key ${key} to localStorage:`, e);
+            }
+        }
+
+        function saveAllData() {
+            saveToLocalStorage(`accounts_${sessionId}`, accounts);
+            saveToLocalStorage(`transactions_${sessionId}`, transactions);
+            saveToLocalStorage(`events_${sessionId}`, events);
+            saveToLocalStorage(`vacations_${sessionId}`, vacations);
+            saveToLocalStorage(`holidays_${sessionId}`, holidays);
+            saveToLocalStorage(`meals_${sessionId}`, meals);
+            saveToLocalStorage(`username_${sessionId}`, currentUserName);
+        }
+
+        function loadAllData() {
+            accounts = loadFromLocalStorage(`accounts_${sessionId}`, []);
+            transactions = loadFromLocalStorage(`transactions_${sessionId}`, []);
+            events = loadFromLocalStorage(`events_${sessionId}`, []);
+            vacations = loadFromLocalStorage(`vacations_${sessionId}`, []);
+            holidays = loadFromLocalStorage(`holidays_${sessionId}`, []);
+            meals = loadFromLocalStorage(`meals_${sessionId}`, []);
+            currentUserName = loadFromLocalStorage(`username_${sessionId}`, null);
+        }
+
+        // --- THEME MANAGEMENT ---
+
+        function setTheme(themeName) {
+            document.documentElement.classList.toggle('dark', themeName === 'dark');
+            localStorage.setItem('theme', themeName);
+            if (themeSelectorEl) { themeSelectorEl.value = themeName; }
+            refreshTransactionData(); // Re-render charts
+        }
+
+        function loadTheme() {
+            const savedTheme = localStorage.getItem('theme') || 'light';
+            setTheme(savedTheme);
+        }
+        
+        function handleThemeChange(e) {
+            setTheme(e.target.value);
+        }
+
+        // --- USER PROFILE OPERATIONS ---
+        
+        function updateGreeting() {
+            const nameToDisplay = currentUserName || `Local Hub User`;
+            homeGreetingEl.textContent = `Hello, ${nameToDisplay}!`;
+        }
+
+        function saveUserName(name) {
+            currentUserName = name;
+            saveAllData();
+            updateGreeting();
+            
+            statusMessageEl.textContent = `Display name updated successfully to ${name}!`;
+            statusMessageEl.classList.remove('hidden', 'text-red-500');
+            statusMessageEl.classList.add('text-green-600');
+            setTimeout(() => statusMessageEl.classList.add('hidden'), 3000);
+        }
+
+        function handleUsernameSave(e) {
+            e.preventDefault();
+            const name = usernameInputEl.value.trim();
+            if (name) { saveUserName(name); }
+        }
+        
+        // --- GENERAL UI & TABS ---
+        
+        function refreshCurrentView() {
+            if (currentView === 'finance') {
+                refreshAccountData();
+                refreshTransactionData();
+            } else if (currentView === 'events') {
+                refreshEventData();
+            } else if (currentView === 'vacation') {
+                refreshVacationData();
+            } else if (currentView === 'holiday') {
+                refreshHolidayData();
+            } else if (currentView === 'diet') { 
+                refreshDietData();
+            }
+        }
+
+        function showView(viewName) {
+            const views = [
+                'home', 'finance', 'events', 'vacation', 'account', 'holiday', 'diet'
+            ];
+            
+            views.forEach(view => {
+                const viewElement = document.getElementById(`${view}-view`);
+                if (viewElement) {
+                    viewElement.classList.toggle('hidden', view !== viewName);
+                }
+            });
+            
+            currentView = viewName;
+
+            // Update tab styles
+            tabButtons.forEach(btn => {
+                const isActive = btn.dataset.view === viewName;
+                btn.classList.toggle('tab-active', isActive);
+                btn.classList.toggle('border-green-500', isActive);
+                btn.classList.toggle('text-emerald-600', isActive);
+                btn.classList.toggle('bg-green-50', isActive);
+
+                btn.classList.toggle('border-transparent', !isActive);
+                btn.classList.toggle('text-gray-500', !isActive);
+                btn.classList.toggle('hover:border-gray-300', !isActive);
+                btn.classList.toggle('hover:text-gray-700', !isActive);
+            });
+            
+            // Refresh data for the newly visible tab
+            refreshCurrentView();
+        }
+
+        // Nav listeners for main tabs
+        tabButtons.forEach(button => {
+            button.addEventListener('click', (e) => showView(e.target.dataset.view));
+        });
+        
+        // Nav listeners for Home page buttons
+        document.querySelectorAll('#home-view button[data-view]').forEach(button => {
+            button.addEventListener('click', (e) => showView(e.currentTarget.dataset.view));
+        });
+        
+        // Nav listener for the dedicated Account button
+        document.getElementById('account-nav-button').addEventListener('click', () => {
+            showView('account');
+            // Ensure username input reflects current state
+            usernameInputEl.value = currentUserName || '';
+            userIdEl.textContent = sessionId;
+        });
+
+        // --- DATA REFRESH (REPLACING FIRESTORE LISTENERS) ---
+
+        function refreshAccountData() {
+            // Load accounts from global array (already loaded by loadAllData)
+            accounts.sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+
+            renderAccountSelectors();
+            renderAccountManagementList();
+        }
+        
+        function refreshTransactionData() {
+            // Sort by timestamp (most recent first)
+            const sortedTransactions = [...transactions].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+            
+            // Calculate summary for all transactions
+            let totalIncome = 0;
+            let totalExpenses = 0;
+            sortedTransactions.forEach(t => {
+                const amount = parseFloat(t.amount);
+                if (t.type === 'income') {
+                    totalIncome += amount;
+                } else if (t.type === 'expense') {
+                    totalExpenses += amount;
+                }
+            });
+
+            // Apply filtering for the current view
+            let filteredTransactions = sortedTransactions;
+            if (selectedAccountId !== 'all') {
+                filteredTransactions = sortedTransactions.filter(t => t.accountId === selectedAccountId);
+            }
+            
+            // Render UI
+            renderTransactions(filteredTransactions);
+            updateSummary(totalIncome, totalExpenses);
+            renderCharts(filteredTransactions);
+        }
+
+        function refreshEventData() {
+            // Sort by date (nearest event first)
+            const sortedEvents = [...events].sort((a, b) => a.date.localeCompare(b.date));
+            renderEvents(sortedEvents);
+        }
+
+        function refreshVacationData() {
+            // Sort by start_date (nearest trip first)
+            const sortedVacations = [...vacations].sort((a, b) => a.start_date.localeCompare(b.start_date));
+            renderVacations(sortedVacations);
+        }
+
+        function refreshHolidayData() {
+            // Sort by date
+            const sortedHolidays = [...holidays].sort((a, b) => a.date.localeCompare(b.date));
+            renderHolidays(sortedHolidays);
+        }
+
+        function refreshDietData() {
+            // Sort by date (most recent first)
+            const sortedMeals = [...meals].sort((a, b) => b.date.localeCompare(a.date));
+            renderMeals(sortedMeals);
+        }
+
+        // --- ACCOUNT MANAGEMENT ---
+
+        function handleAccountChange(e) {
+            selectedAccountId = e.target.value;
+            refreshTransactionData();
+        }
+        
+        function renderAccountSelectors() {
+            accountSelectorEl.innerHTML = '<option value="all">All Accounts</option>';
+            transactionAccountSelectorEl.innerHTML = '<option value="" disabled selected>Select Account</option>';
+
+            if (accounts.length > 0) {
+                accounts.forEach(account => {
+                    const option = document.createElement('option');
+                    option.value = account.id;
+                    option.textContent = account.name;
+                    accountSelectorEl.appendChild(option.cloneNode(true));
+                    transactionAccountSelectorEl.appendChild(option.cloneNode(true));
+                });
+                
+                if (accountSelectorEl.querySelector(`option[value="${selectedAccountId}"]`)) {
+                    accountSelectorEl.value = selectedAccountId;
+                } else {
+                    selectedAccountId = 'all';
+                    accountSelectorEl.value = 'all';
+                }
+            }
+        }
+        
+        function renderAccountManagementList() {
+            if (!accountListEl || !emptyAccountStateEl) return;
+            accountListEl.innerHTML = '';
+
+            if (accounts.length === 0) {
+                emptyAccountStateEl.classList.remove('hidden');
+                return;
+            }
+            emptyAccountStateEl.classList.add('hidden');
+
+            accounts.forEach(account => {
+                const item = document.createElement('div');
+                item.className = 'flex justify-between items-center p-3 bg-gray-50 dark:bg-gray-700 rounded-md';
+                item.innerHTML = `
+                    <p class="font-medium text-gray-800 dark:text-gray-100">${account.name}</p>
+                    <button data-id="${account.id}" class="delete-account-btn text-red-400 hover:text-red-600 transition duration-150 p-1 rounded text-sm">
+                        Delete
+                    </button>
+                `;
+                accountListEl.appendChild(item);
+            });
+
+            document.querySelectorAll('.delete-account-btn').forEach(button => {
+                button.addEventListener('click', (e) => {
+                    const accountId = e.currentTarget.dataset.id;
+                    // Using confirm() since we removed custom modal/alert logic in the Firebase removal step
+                    if (confirm("WARNING: Deleting an account will keep its linked transactions in storage, but they will become unlinked. Are you sure?")) {
+                        // Directly call the deletion function
+                        deleteItem(accountId, 'accounts');
+                    }
+                });
+            });
+        }
+        
+        // --- DATA MANIPULATION FUNCTIONS ---
+
+        async function addItem(data, type) {
+            const newItem = {
+                id: generateUniqueId(),
+                timestamp: new Date().toISOString(), // Local timestamp
+                ...data
+            };
+
+            switch (type) {
+                case 'accounts': accounts.push(newItem); break;
+                case 'transactions': transactions.push(newItem); break;
+                case 'events': events.push(newItem); break;
+                case 'vacations': vacations.push(newItem); break;
+                case 'holidays': holidays.push(newItem); break;
+                case 'diet': meals.push(newItem); break;
+            }
+            
+            saveAllData();
+            refreshCurrentView(); // Refresh the current view to show the change
+        }
+
+        async function deleteItem(id, type) {
+            let dataArray;
+            switch (type) {
+                case 'accounts': dataArray = accounts; break;
+                case 'transactions': dataArray = transactions; break;
+                case 'events': dataArray = events; break;
+                case 'vacations': dataArray = vacations; break;
+                case 'holidays': dataArray = holidays; break;
+                case 'diet': dataArray = meals; break;
+                default: return;
+            }
+
+            const initialLength = dataArray.length;
+            const index = dataArray.findIndex(item => item.id === id);
+            
+            if (index !== -1) {
+                dataArray.splice(index, 1);
+            }
+
+            if (dataArray.length < initialLength) {
+                saveAllData();
+                refreshCurrentView();
+            }
+        }
+
+
+        // --- UI RENDERING FUNCTIONS (RE-USED/ADAPTED) ---
+        
+        function updateSummary(income, expense) {
+            const balance = income - expense;
+
+            totalIncomeEl.textContent = formatter.format(income);
+            totalExpensesEl.textContent = formatter.format(expense);
+            totalBalanceEl.textContent = formatter.format(balance);
+
+            totalBalanceEl.classList.remove('text-red-700', 'text-green-700');
+            totalBalanceEl.classList.add(balance >= 0 ? 'text-green-700' : 'text-red-700');
+        }
+
+        function renderTransactions(txs) {
+            transactionListEl.innerHTML = '';
+            const transactionsToRender = txs; 
+
+            if (transactionsToRender.length === 0) {
+                emptyFinanceStateEl.classList.remove('hidden');
+                transactionListEl.appendChild(emptyFinanceStateEl);
+                return;
+            }
+
+            emptyFinanceStateEl.classList.add('hidden');
+
+            transactionsToRender.forEach(transaction => {
+                const isExpense = transaction.type === 'expense';
+                const sign = isExpense ? '-' : '+';
+                const textColor = isExpense ? 'text-red-500 dark:text-red-400' : 'text-green-500 dark:text-green-400';
+                const indicatorBg = isExpense ? 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300' : 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300';
+                
+                const account = accounts.find(a => a.id === transaction.accountId);
+                const accountName = account ? account.name : (transaction.accountId ? 'Unlinked Account' : 'N/A');
+
+                // Using the locally saved timestamp (ISO string)
+                const datetime = new Date(transaction.timestamp).toLocaleString('en-US', { dateStyle: 'short', timeStyle: 'short' }); 
+
+                const listItem = document.createElement('li');
+                listItem.className = `flex justify-between items-center p-4 hover:bg-gray-50 dark:hover:bg-gray-700 transition duration-100 rounded-lg group`;
+                listItem.innerHTML = `
+                    <div class="flex items-center space-x-4 flex-grow min-w-0">
+                        <span class="text-xs font-semibold px-3 py-1 rounded-full ${indicatorBg}">${transaction.category.substring(0, 1).toUpperCase()}</span>
+                        <div class="min-w-0">
+                            <p class="text-gray-900 dark:text-gray-100 font-medium truncate">${datetime}</p>
+                            <p class="text-sm text-gray-500 dark:text-gray-400">${transaction.category} &bull; <span class="font-semibold text-gray-700 dark:text-gray-300">${accountName}</span> &bull; ${transaction.description || 'No Description'}</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center space-x-4">
+                        <p class="font-bold ${textColor} text-right text-lg">
+                            ${sign}${formatter.format(transaction.amount).replace('$', '')}
+                        </p>
+                        <button data-id="${transaction.id}" data-type="transactions" class="delete-btn text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition duration-150 p-1 rounded">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3m-3 0h14"></path></svg>
+                        </button>
+                    </div>
+                `;
+                transactionListEl.appendChild(listItem);
+            });
+
+            document.querySelectorAll('[data-type="transactions"].delete-btn').forEach(button => {
+                button.addEventListener('click', handleDelete);
+            });
+        }
+        
+        function generateColors(count) {
+            const colors = [];
+            for (let i = 0; i < count; i++) {
+                colors.push(`hsl(${i * 360 / count}, 70%, 60%)`);
+            }
+            return colors;
+        }
+        
+        function aggregateExpenseData(transactions) {
+            const expenseMap = {};
+            transactions.filter(t => t.type === 'expense').forEach(t => {
+                const category = t.category ? t.category.trim() : 'Uncategorized';
+                const amount = parseFloat(t.amount) || 0;
+                expenseMap[category] = (expenseMap[category] || 0) + amount;
+            });
+            let aggregatedData = Object.entries(expenseMap)
+                .map(([category, total]) => ({ category, total }))
+                .sort((a, b) => b.total - a.total);
+            const labels = aggregatedData.map(d => d.category);
+            const data = aggregatedData.map(d => d.total);
+            return { labels, data };
+        }
+
+        function renderCharts(transactions) {
+            const { labels, data } = aggregateExpenseData(transactions);
+            
+            const pieCtx = document.getElementById('expensePieChart').getContext('2d');
+            const barCtx = document.getElementById('expenseBarChart').getContext('2d');
+
+            if (pieChartInstance) pieChartInstance.destroy();
+            if (barChartInstance) barChartInstance.destroy();
+            
+            if (data.length === 0) return;
+
+            const backgroundColors = generateColors(data.length);
+
+            const isDarkMode = document.documentElement.classList.contains('dark');
+            const fontColor = isDarkMode ? '#f3f4f6' : '#1f2937';
+            const gridColor = isDarkMode ? 'rgba(107, 114, 128, 0.2)' : 'rgba(229, 231, 235, 1)';
+            
+            const commonOptions = {
+                responsive: true,
+                plugins: {
+                    legend: { 
+                        position: 'bottom', 
+                        labels: { 
+                            color: fontColor,
+                            font: { size: 10 } 
+                        } 
+                    },
+                    tooltip: { 
+                        callbacks: { 
+                            label: (context) => `${context.label}: ${formatter.format(context.parsed)}` 
+                        } 
+                    }
+                }
+            };
+
+            pieChartInstance = new Chart(pieCtx, {
+                type: 'pie',
+                data: {
+                    labels: labels,
+                    datasets: [{ data: data, backgroundColor: backgroundColors, hoverOffset: 4 }]
+                },
+                options: commonOptions
+            });
+
+            const top5Labels = labels.slice(0, 5);
+            const top5Data = data.slice(0, 5);
+            const top5Colors = backgroundColors.slice(0, 5);
+
+            barChartInstance = new Chart(barCtx, {
+                type: 'bar',
+                data: {
+                    labels: top5Labels,
+                    datasets: [{ label: 'Expense Amount', data: top5Data, backgroundColor: top5Colors, borderRadius: 5 }]
+                },
+                options: {
+                    ...commonOptions,
+                    indexAxis: 'y',
+                    scales: {
+                        x: { 
+                            beginAtZero: true, 
+                            title: { display: true, text: 'Amount ($)', color: fontColor }, 
+                            ticks: { callback: (value) => `$${value.toFixed(0)}`, color: fontColor },
+                            grid: { color: gridColor }
+                        },
+                        y: { 
+                            title: { display: true, text: 'Category', color: fontColor },
+                            ticks: { color: fontColor },
+                            grid: { color: gridColor }
+                        }
+                    },
+                    plugins: {
+                        ...commonOptions.plugins,
+                        legend: { display: false },
+                    },
+                }
+            });
+        }
+
+        function renderEvents(eventsToRender) {
+            eventListEl.innerHTML = '';
+            const today = new Date().toISOString().split('T')[0];
+
+            if (eventsToRender.length === 0) {
+                emptyEventsStateEl.classList.remove('hidden');
+                eventListEl.appendChild(emptyEventsStateEl);
+                return;
+            }
+
+            emptyEventsStateEl.classList.add('hidden');
+
+            eventsToRender.forEach(event => {
+                const isPassedClass = event.date < today ? 'opacity-50 line-through' : '';
+                const typeClass = event.type === 'Birthday' ? 'bg-pink-100 text-pink-700 dark:bg-pink-900 dark:text-pink-300' : 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300';
+
+                const listItem = document.createElement('li');
+                listItem.className = `flex justify-between items-center p-4 hover:bg-gray-50 dark:hover:bg-gray-700 transition duration-100 rounded-lg group ${isPassedClass}`;
+                listItem.innerHTML = `
+                    <div class="flex items-center space-x-4 flex-grow min-w-0">
+                        <span class="text-xs font-semibold px-3 py-1 rounded-full ${typeClass}">${event.type}</span>
+                        <div class="min-w-0">
+                            <p class="text-gray-900 dark:text-gray-100 font-medium truncate">${event.title}</p>
+                            <p class="text-sm text-gray-500 dark:text-gray-400">${new Date(event.date).toLocaleDateString()} - ${event.description || 'No description'}</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center space-x-4">
+                        <button data-id="${event.id}" data-type="events" class="delete-btn text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition duration-150 p-1 rounded">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3m-3 0h14"></path></svg>
+                        </button>
+                    </div>
+                `;
+                eventListEl.appendChild(listItem);
+            });
+            
+            document.querySelectorAll('[data-type="events"].delete-btn').forEach(button => {
+                button.addEventListener('click', handleDelete);
+            });
+        }
+        
+        function renderVacations(vacationsToRender) {
+            vacationListEl.innerHTML = '';
+            const today = new Date().toISOString().split('T')[0];
+
+            if (vacationsToRender.length === 0) {
+                emptyVacationStateEl.classList.remove('hidden');
+                vacationListEl.appendChild(emptyVacationStateEl);
+                return;
+            }
+
+            emptyVacationStateEl.classList.add('hidden');
+
+            vacationsToRender.forEach(trip => {
+                const isPastClass = trip.end_date < today ? 'opacity-50 line-through' : '';
+                const participantsList = trip.participants.split(',').map(p => `<span class="bg-purple-100 text-purple-700 text-xs px-2 py-0.5 rounded-full dark:bg-purple-900 dark:text-purple-300">${p.trim()}</span>`).join(' ');
+
+                const listItem = document.createElement('li');
+                listItem.className = `flex justify-between items-center p-4 hover:bg-gray-50 dark:hover:bg-gray-700 transition duration-100 rounded-lg group ${isPastClass}`;
+                listItem.innerHTML = `
+                    <div class="flex items-center space-x-4 flex-grow min-w-0">
+                        <svg class="w-6 h-6 text-purple-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                        <div class="min-w-0">
+                            <p class="text-gray-900 dark:text-gray-100 font-medium truncate">${trip.name} - <span class="text-sm font-normal text-gray-500 dark:text-gray-400">${trip.start_date} to ${trip.end_date}</span></p>
+                            <div class="mt-1 flex flex-wrap gap-2 text-sm">${participantsList}</div>
+                        </div>
+                    </div>
+                    <div class="flex items-center space-x-4">
+                        <button data-id="${trip.id}" data-type="vacations" class="delete-btn text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition duration-150 p-1 rounded">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3m-3 0h14"></path></svg>
+                        </button>
+                    </div>
+                `;
+                vacationListEl.appendChild(listItem);
+            });
+            
+            document.querySelectorAll('[data-type="vacations"].delete-btn').forEach(button => {
+                button.addEventListener('click', handleDelete);
+            });
+        }
+        
+        function renderHolidays(holidaysToRender) {
+            holidayListEl.innerHTML = '';
+            const today = new Date().toISOString().split('T')[0];
+
+            if (holidaysToRender.length === 0) {
+                emptyHolidayStateEl.classList.remove('hidden');
+                holidayListEl.appendChild(emptyHolidayStateEl);
+                return;
+            }
+
+            emptyHolidayStateEl.classList.add('hidden');
+
+            holidaysToRender.forEach(holiday => {
+                const isPassedClass = holiday.date < today ? 'opacity-50 line-through' : '';
+                const listItem = document.createElement('li');
+                listItem.className = `flex justify-between items-center p-4 hover:bg-gray-50 dark:hover:bg-gray-700 transition duration-100 rounded-lg group ${isPassedClass}`;
+                listItem.innerHTML = `
+                    <div class="flex items-center space-x-4 flex-grow min-w-0">
+                        <span class="text-xs font-semibold px-3 py-1 rounded-full bg-amber-100 text-amber-700 dark:bg-amber-900 dark:text-amber-300 flex-shrink-0">HOLIDAY</span>
+                        <div class="min-w-0">
+                            <p class="text-gray-900 dark:text-gray-100 font-medium truncate">${holiday.name}</p>
+                            <p class="text-sm text-gray-500 dark:text-gray-400">Date: ${new Date(holiday.date).toLocaleDateString()}</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center space-x-4">
+                        <button data-id="${holiday.id}" data-type="holidays" class="delete-btn text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition duration-150 p-1 rounded">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3m-3 0h14"></path></svg>
+                        </button>
+                    </div>
+                `;
+                holidayListEl.appendChild(listItem);
+            });
+            
+            document.querySelectorAll('[data-type="holidays"].delete-btn').forEach(button => {
+                button.addEventListener('click', handleDelete);
+            });
+        }
+        
+        function renderMeals(mealsToRender) {
+            dietListEl.innerHTML = '';
+
+            if (mealsToRender.length === 0) {
+                emptyDietStateEl.classList.remove('hidden');
+                dietListEl.appendChild(emptyDietStateEl);
+                return;
+            }
+
+            emptyDietStateEl.classList.add('hidden');
+
+            mealsToRender.forEach(meal => {
+                const listItem = document.createElement('li');
+                listItem.className = `flex justify-between items-center p-4 hover:bg-gray-50 dark:hover:bg-gray-700 transition duration-100 rounded-lg group`;
+                listItem.innerHTML = `
+                    <div class="flex items-center space-x-4 flex-grow min-w-0">
+                        <span class="text-xs font-semibold px-3 py-1 rounded-full bg-indigo-100 text-indigo-700 dark:bg-indigo-900 dark:text-indigo-300 flex-shrink-0">MEAL</span>
+                        <div class="min-w-0">
+                            <p class="text-gray-900 dark:text-gray-100 font-medium truncate">${meal.name} - <span class="text-indigo-600 dark:text-indigo-400 font-bold">${meal.calories} kcal</span></p>
+                            <p class="text-sm text-gray-500 dark:text-gray-400">${new Date(meal.date).toLocaleDateString()} &bull; ${meal.ingredients || 'No notes'}</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center space-x-4">
+                        <button data-id="${meal.id}" data-type="diet" class="delete-btn text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition duration-150 p-1 rounded">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3m-3 0h14"></path></svg>
+                        </button>
+                    </div>
+                `;
+                dietListEl.appendChild(listItem);
+            });
+            
+            document.querySelectorAll('[data-type="diet"].delete-btn').forEach(button => {
+                button.addEventListener('click', handleDelete);
+            });
+        }
+
+
+        // --- COMMON EVENT HANDLERS ---
+
+        document.getElementById('add-account-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const input = document.getElementById('new-account-name');
+            const accountName = input.value.trim();
+
+            if (accountName) {
+                await addItem({ name: accountName }, 'accounts');
+                input.value = '';
+            }
+        });
+
+        document.getElementById('transaction-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const form = e.target;
+            const data = {
+                accountId: form.elements['transaction-account-id'].value,
+                amount: parseFloat(form.elements['amount'].value),
+                type: form.elements['type'].value,
+                category: form.elements['category'].value.trim(),
+                description: form.elements['description'].value.trim()
+            };
+
+            if (!data.accountId || isNaN(data.amount) || !data.type || !data.category || !data.description) {
+                console.error("Missing transaction fields or invalid amount.");
+                return;
+            }
+
+            await addItem(data, 'transactions');
+            form.elements['amount'].value = '';
+            form.elements['category'].value = '';
+            form.elements['description'].value = '';
+        });
+
+        document.getElementById('event-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const form = e.target;
+            const data = {
+                title: form.elements['event-title'].value.trim(),
+                date: form.elements['event-date'].value,
+                type: form.elements['event-type'].value,
+                description: form.elements['event-description'].value.trim()
+            };
+
+            if (!data.title || !data.date || !data.type) {
+                console.error("Missing event fields.");
+                return;
+            }
+
+            await addItem(data, 'events');
+            form.reset();
+            form.elements['event-type'].value = 'Birthday';
+        });
+
+        document.getElementById('vacation-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const form = e.target;
+            const startDate = form.elements['start-date'].value;
+            const endDate = form.elements['end-date'].value;
+            
+            if (startDate > endDate) {
+                statusMessageEl.textContent = `End date must be after or same as start date.`;
+                statusMessageEl.classList.remove('hidden');
+                setTimeout(() => statusMessageEl.classList.add('hidden'), 5000);
+                return;
+            }
+
+            const data = {
+                name: form.elements['trip-name'].value.trim(),
+                start_date: startDate,
+                end_date: endDate,
+                participants: form.elements['participants'].value.trim()
+            };
+            
+            if (!data.name || !data.start_date || !data.end_date) {
+                console.error("Missing vacation fields.");
+                return;
+            }
+
+            await addItem(data, 'vacations');
+            form.reset();
+        });
+        
+        function handleHolidaySubmit(e) {
+            e.preventDefault();
+            const form = e.target;
+            const data = {
+                name: form.elements['holiday-name'].value.trim(),
+                date: form.elements['holiday-date'].value,
+            };
+
+            if (!data.name || !data.date) {
+                console.error("Missing holiday fields.");
+                return;
+            }
+
+            addItem(data, 'holidays');
+            form.reset();
+        }
+
+        function handleDietSubmit(e) { 
+            e.preventDefault();
+            const form = e.target;
+            const calories = parseInt(form.elements['meal-calories'].value);
+
+            const data = {
+                name: form.elements['meal-name'].value.trim(),
+                date: form.elements['meal-date'].value,
+                calories: calories,
+                ingredients: form.elements['meal-ingredients'].value.trim(),
+            };
+
+            if (!data.name || !data.date || isNaN(data.calories)) {
+                console.error("Missing or invalid meal fields.");
+                return;
+            }
+
+            addItem(data, 'diet');
+            form.reset();
+        }
+
+        async function handleDelete(e) {
+            const button = e.currentTarget;
+            const docId = button.dataset.id;
+            const dataType = button.dataset.type;
+            
+            if (!docId || !dataType) return;
+
+            // Delete the item from the appropriate array and save to local storage
+            deleteItem(docId, dataType);
+        }
+
+        // --- APP INITIALIZATION (REPLACING FIREBASE SETUP) ---
+
+        function setupApp() {
+            // 1. Load Theme & Data
+            loadTheme();
+            loadAllData();
+            
+            // 2. Initial UI Setup
+            updateGreeting();
+            userIdEl.textContent = sessionId; // Display static session ID
+            usernameInputEl.value = currentUserName || '';
+
+            // 3. Set up event handlers
+            accountSelectorEl.addEventListener('change', handleAccountChange);
+            usernameFormEl.addEventListener('submit', handleUsernameSave);
+            holidayFormEl.addEventListener('submit', handleHolidaySubmit);
+            dietFormEl.addEventListener('submit', handleDietSubmit); 
+            themeSelectorEl.addEventListener('change', handleThemeChange); 
+
+            // 4. Show initial view and load data
+            showView('home'); 
+        }
+
+        // Initialize the app on load
+        setupApp();
+    </script>
+</body>
+</html>
