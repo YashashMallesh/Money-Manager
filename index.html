@@ -22,9 +22,21 @@
     <!-- Load Chart.js for visualizations -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
     <style>
+        /* Define pattern color variable for light mode */
+        :root {
+            --bg-pattern-color: rgba(0, 0, 0, 0.05); /* Very faint black dots for light mode */
+        }
+        /* Override pattern color for dark mode */
+        .dark {
+            --bg-pattern-color: rgba(255, 255, 255, 0.05); /* Very faint white dots for dark mode */
+        }
+
         body {
             font-family: 'Inter', sans-serif;
             background-color: #f7f9fb; /* Light background default */
+            /* Subtle dot pattern */
+            background-image: radial-gradient(var(--bg-pattern-color) 1px, transparent 1px);
+            background-size: 25px 25px;
         }
         /* Override body background for dark mode */
         .dark body {
@@ -70,12 +82,24 @@
             transform: translateY(-2px);
             box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
         }
-        /* Custom colors for navigation cards */
-        .finance-bg { background-color: #efdfca; color: #212121; } /* Green */
-        .events-bg { background-color: #efdfca; color: #212121; } /* Blue */
-        .vacations-bg { background-color: #efdfca; color: #212121; } /* Purple */
-        .holiday-bg { background-color: #efdfca; color: #212121; } /* Amber/Yellow */
-        .diet-bg { background-color: #efdfca; color: #212121; } /* Indigo */
+        
+        /* Custom styles for the new SIMPLE aesthetic */
+        .nav-card-simple { 
+            background-color: #f3f4f6; /* Light Gray */
+            color: #063502; /* Green Accent for Icon/Text */
+            border: 1px solid #e5e7eb; /* Subtle Border */
+        } 
+        .dark .nav-card-simple {
+            background-color: #374151; /* Dark Gray */
+            color: #d1fae5; /* Light Green Accent */
+            border-color: #4b5563; /* Subtle Dark Border */
+        }
+        .dark .nav-card:hover {
+             background-color: #4b5563; /* Slightly lighter gray on hover in dark mode */
+        }
+        .nav-card:hover {
+             background-color: #ebebeb; /* Slightly darker gray on hover in light mode */
+        }
     </style>
 </head>
 <body class="min-h-screen">
@@ -130,24 +154,25 @@
 
                 <!-- 2. Five Navigation Buttons (2x2 Grid modified to responsive 3-column layout) -->
                 <div class="grid grid-cols-2 md:grid-cols-3 gap-6">
-                    <button class="nav-card finance-bg hover:bg-green-100" data-view="finance">
+                    <!-- ALL BUTTONS NOW USE THE SAME nav-card-simple CLASS -->
+                    <button class="nav-card nav-card-simple" data-view="finance">
                         <svg class="w-8 h-8 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8V9a1 1 0 00-1-1h-2a1 1 0 00-1 1v1m4 0v1a1 1 0 001 1h2a1 1 0 001-1v-1m-4 0h-4m12 0a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
                         <span class="font-bold text-lg">Finance Tracker</span>
                     </button>
-                    <button class="nav-card events-bg hover:bg-blue-100" data-view="events">
+                    <button class="nav-card nav-card-simple" data-view="events">
                         <svg class="w-8 h-8 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
                         <span class="font-bold text-lg">Event Planner</span>
                     </button>
-                    <button class="nav-card vacations-bg hover:bg-purple-100" data-view="vacation">
+                    <button class="nav-card nav-card-simple" data-view="vacation">
                         <svg class="w-8 h-8 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 8v.01M6 16v.01M12 10.5V17M12 17a4 4 0 004-4v-2a4 4 0 00-4-4V7a4 4 0 00-4 4v2a4 4 0 004 4z"></path></svg>
                         <span class="font-bold text-lg">Vacation Planner</span>
                     </button>
-                    <button class="nav-card holiday-bg hover:bg-amber-100" data-view="holiday">
+                    <button class="nav-card nav-card-simple" data-view="holiday">
                         <svg class="w-8 h-8 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
                         <span class="font-bold text-lg">Holiday Calendar</span>
                     </button>
                     <!-- NEW DIET BUTTON -->
-                    <button class="nav-card diet-bg hover:bg-indigo-100" data-view="diet">
+                    <button class="nav-card nav-card-simple" data-view="diet">
                         <svg class="w-8 h-8 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 13h6m-3-3v6m-9 1V7a2 2 0 012-2h10a2 2 0 012 2v10a2 2 0 01-2 2H5a2 2 0 01-2-2z"></path></svg>
                         <span class="font-bold text-lg">Diet Planner</span>
                     </button>
@@ -168,8 +193,8 @@
                     
                     <div class="mb-6 pb-4 border-b border-gray-100 dark:border-gray-700">
                         <p class="text-sm text-gray-500 mb-2 dark:text-gray-400">Authenticated User Identifier (Local Session ID):</p>
-                        <p class="font-mono text-sm bg-gray-100 dark:bg-gray-700 px-3 py-2 rounded-lg break-all">ID: <span id="user-id" class="font-semibold text-gray-800 dark:text-gray-200">USER</span></p>
-                        <p class="text-xs text-red-500 mt-2"></p>
+                        <p class="font-mono text-sm bg-gray-100 dark:bg-gray-700 px-3 py-2 rounded-lg break-all">ID: <span id="user-id" class="font-semibold text-gray-800 dark:text-gray-200">LOCAL-USER</span></p>
+                        <p class="text-xs text-red-500 mt-2">Note: This ID is local to your browser and does not sync data.</p>
                     </div>
 
                     <div class="mb-6">
@@ -206,6 +231,11 @@
                     </select>
                 </div>
                 
+                <!-- NEW: Low Balance Warning -->
+                <div id="low-balance-warning" class="bg-red-100 dark:bg-red-900 p-3 rounded-xl shadow-md text-red-800 dark:text-red-200 font-semibold text-center hidden">
+                    <!-- Warning message injected here -->
+                </div>
+
                 <!-- Summary Card -->
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <!-- Total Balance -->
@@ -224,6 +254,21 @@
                         <p id="total-expenses" class="text-3xl font-bold text-red-700 mt-1">₹0.00</p>
                     </div>
                 </div>
+
+                <!-- NEW: Saving Tip and Threshold Input -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <!-- Saving Tip -->
+                    <div id="saving-tip" class="bg-yellow-50 dark:bg-gray-700 p-4 rounded-xl shadow-md font-medium text-amber-700 dark:text-amber-400">
+                        <!-- Tip injected here -->
+                    </div>
+                    <!-- Threshold Input -->
+                    <div class="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-md">
+                        <label for="low-balance-input" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Low Balance Warning Threshold (₹)</label>
+                        <input type="number" step="1" id="low-balance-input" placeholder="e.g., 10000" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 border focus:border-red-500 focus:ring-red-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                        <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Receive a warning if balance drops below this amount.</p>
+                    </div>
+                </div>
+
 
                 <!-- Account Management Panel -->
                 <div class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg">
@@ -497,6 +542,7 @@
         let meals = [];
         let currentUserName = null; 
         let selectedAccountId = 'all'; 
+        let lowBalanceThreshold = 0; // NEW: Low balance threshold
 
         // Chart Instances
         let pieChartInstance = null;
@@ -532,6 +578,11 @@
         const dietListEl = document.getElementById('diet-list');
         const emptyDietStateEl = document.getElementById('empty-diet-state');
         const tabButtons = document.querySelectorAll('.tab-button');
+        
+        // NEW UI References
+        const lowBalanceInputEl = document.getElementById('low-balance-input');
+        const lowBalanceWarningEl = document.getElementById('low-balance-warning');
+        const savingTipEl = document.getElementById('saving-tip');
         
         let currentView = 'home';
 
@@ -570,6 +621,7 @@
             saveToLocalStorage(`holidays_${sessionId}`, holidays);
             saveToLocalStorage(`meals_${sessionId}`, meals);
             saveToLocalStorage(`username_${sessionId}`, currentUserName);
+            saveToLocalStorage(`lowBalanceThreshold_${sessionId}`, lowBalanceThreshold); // NEW SAVE
         }
 
         function loadAllData() {
@@ -580,6 +632,7 @@
             holidays = loadFromLocalStorage(`holidays_${sessionId}`, []);
             meals = loadFromLocalStorage(`meals_${sessionId}`, []);
             currentUserName = loadFromLocalStorage(`username_${sessionId}`, null);
+            lowBalanceThreshold = loadFromLocalStorage(`lowBalanceThreshold_${sessionId}`, 10000); // NEW LOAD with default
         }
 
         // --- THEME MANAGEMENT ---
@@ -624,12 +677,29 @@
             if (name) { saveUserName(name); }
         }
         
+        // --- MONEY SAVING SUGGESTIONS ---
+
+        const savingTips = [
+            "Review your last 5 expenses and find one you can cut next month.",
+            "Try the 50/30/20 rule: 50% Needs, 30% Wants, 20% Savings.",
+            "Cook meals at home this week instead of eating out.",
+            "Automate your savings transfer right after payday.",
+            "Challenge yourself to have one 'no-spend' day this week.",
+            "Cancel one unused subscription service today!",
+        ];
+
+        function displaySavingTip() {
+            const tip = savingTips[Math.floor(Math.random() * savingTips.length)];
+            savingTipEl.textContent = `💡 Money Saving Tip: ${tip}`;
+        }
+        
         // --- GENERAL UI & TABS ---
         
         function refreshCurrentView() {
             if (currentView === 'finance') {
                 refreshAccountData();
                 refreshTransactionData();
+                displaySavingTip(); // Show a new tip when viewing finance
             } else if (currentView === 'events') {
                 refreshEventData();
             } else if (currentView === 'vacation') {
@@ -691,7 +761,7 @@
             userIdEl.textContent = sessionId;
         });
 
-        // --- DATA REFRESH (REPLACING FIRESTORE LISTENERS) ---
+        // --- DATA REFRESH ---
 
         function refreshAccountData() {
             // Load accounts from global array (already loaded by loadAllData)
@@ -875,7 +945,24 @@
 
             totalBalanceEl.classList.remove('text-red-700', 'text-green-700');
             totalBalanceEl.classList.add(balance >= 0 ? 'text-green-700' : 'text-red-700');
+            
+            // --- NEW: Low Balance Warning Logic ---
+            lowBalanceWarningEl.classList.add('hidden');
+            if (lowBalanceThreshold > 0 && balance < lowBalanceThreshold) {
+                lowBalanceWarningEl.textContent = `⚠️ Warning: Balance (${formatter.format(balance)}) is below your threshold (${formatter.format(lowBalanceThreshold)}). Check your spending!`;
+                lowBalanceWarningEl.classList.remove('hidden');
+            }
         }
+        
+        function handleThresholdChange(e) {
+            const newThreshold = parseFloat(e.target.value);
+            if (!isNaN(newThreshold) && newThreshold >= 0) {
+                lowBalanceThreshold = newThreshold;
+                saveToLocalStorage(`lowBalanceThreshold_${sessionId}`, lowBalanceThreshold);
+                refreshTransactionData(); // Recalculate summary/warning
+            }
+        }
+
 
         function renderTransactions(txs) {
             transactionListEl.innerHTML = '';
@@ -1326,7 +1413,7 @@
             deleteItem(docId, dataType);
         }
 
-        // --- APP INITIALIZATION (REPLACING FIREBASE SETUP) ---
+        // --- APP INITIALIZATION ---
 
         function setupApp() {
             // 1. Load Theme & Data
@@ -1337,6 +1424,8 @@
             updateGreeting();
             userIdEl.textContent = sessionId; // Display static session ID
             usernameInputEl.value = currentUserName || '';
+            lowBalanceInputEl.value = lowBalanceThreshold; // Set input for new threshold
+            
 
             // 3. Set up event handlers
             accountSelectorEl.addEventListener('change', handleAccountChange);
@@ -1344,6 +1433,7 @@
             holidayFormEl.addEventListener('submit', handleHolidaySubmit);
             dietFormEl.addEventListener('submit', handleDietSubmit); 
             themeSelectorEl.addEventListener('change', handleThemeChange); 
+            lowBalanceInputEl.addEventListener('change', handleThresholdChange); // NEW HANDLER
 
             // 4. Show initial view and load data
             showView('home'); 
