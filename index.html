@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Money Manager (Local Storage)</title>
+    <title>Money Manager</title>
     <!-- Load Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
@@ -149,7 +149,7 @@
                 <!-- 1. Greeting Card -->
                 <div class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg border-l-4 border-green-500">
                     <h2 id="home-greeting" class="text-3xl font-bold text-gray-800 dark:text-gray-100">Hello!</h2>
-                    <p class="text-gray-500 mt-1">Select an area to manage your life.</p>
+                    <p class="text-gray-500 mt-1">Select an area to manage your money and time.</p>
                 </div>
 
                 <!-- 2. Five Navigation Buttons (2x2 Grid modified to responsive 3-column layout) -->
@@ -192,7 +192,7 @@
                     <h2 class="text-3xl font-bold text-gray-800 dark:text-gray-100 mb-4">Account Settings</h2>
                     
                     <div class="mb-6 pb-4 border-b border-gray-100 dark:border-gray-700">
-                        <p class="text-sm text-gray-500 mb-2 dark:text-gray-400">Authenticated User Identifier (Local Session ID):</p>
+                        <p class="text-sm text-gray-500 mb-2 dark:text-gray-400">Authenticated User Identifier:</p>
                         <p class="font-mono text-sm bg-gray-100 dark:bg-gray-700 px-3 py-2 rounded-lg break-all">ID: <span id="user-id" class="font-semibold text-gray-800 dark:text-gray-200">LOCAL-USER</span></p>
                         <p class="text-xs text-red-500 mt-2">Note: This ID is local to your browser and does not sync data.</p>
                     </div>
@@ -290,14 +290,14 @@
 
                 <!-- Expense Visualizations -->
                 <div class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg">
-                    <h2 class="text-2xl font-semibold mb-4 text-gray-800 dark:text-gray-100">Expense Visualizations (Current View)</h2>
+                    <h2 class="text-2xl font-semibold mb-4 text-gray-800 dark:text-gray-100">Expense Visualizations</h2>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div>
-                            <h3 class="text-lg font-medium text-gray-700 dark:text-gray-300 mb-2">Spending by Category (Pie Chart)</h3>
+                            <h3 class="text-lg font-medium text-gray-700 dark:text-gray-300 mb-2">Spending by Category</h3>
                             <canvas id="expensePieChart"></canvas>
                         </div>
                         <div>
-                            <h3 class="text-lg font-medium text-gray-700 dark:text-gray-300 mb-2">Top Spending Categories (Bar Chart)</h3>
+                            <h3 class="text-lg font-medium text-gray-700 dark:text-gray-300 mb-2">Top Spending Categories</h3>
                             <canvas id="expenseBarChart"></canvas>
                         </div>
                     </div>
@@ -324,8 +324,8 @@
                         <div class="md:col-span-1">
                             <label for="type" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Type</label>
                             <select id="type" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 border focus:border-green-500 focus:ring-green-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
-                                <option value="expense">Expense (-)</option>
-                                <option value="income">Income (+)</option>
+                                <option value="expense">Expense </option>
+                                <option value="income">Income ^</option>
                             </select>
                         </div>
                         <!-- Category -->
@@ -347,7 +347,7 @@
 
                 <!-- Transaction List -->
                 <div class="bg-white dark:bg-gray-800 p-6 rounded-xl shadow-lg">
-                    <h2 class="text-2xl font-semibold mb-4 text-gray-800 dark:text-gray-100">Recent Transactions (Current View)</h2>
+                    <h2 class="text-2xl font-semibold mb-4 text-gray-800 dark:text-gray-100">Recent Transactions</h2>
                     <div id="transaction-list-container" class="scrollable-list">
                         <ul id="transaction-list" class="divide-y divide-gray-100 dark:divide-gray-700">
                             <li id="empty-finance-state" class="p-4 text-center text-gray-500 dark:text-gray-400">No transactions recorded yet. Add one above!</li>
@@ -1444,3 +1444,4 @@
     </script>
 </body>
 </html>
+
